@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+
+<meta charset="UTF-8">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+<title>Efeito Hall</title>
+
+<style>
+
+/* HTML */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body, html {
+    min-height: 100%;
+}
+
+body {
+    overflow:hidden;
+    background-color: #0f172a;
+    color: #e2e8f0;
+    font-family: Arial, sans-serif;
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* centraliza verticalmente */
+    align-items: center;     /* centraliza horizontalmente */
+}
+
+main {
+    flex: 1;
+}
+
+/* Header */
+.header {
+    background-color: #1e293b;
+    color: #f8fafc;
+    padding: 16px 5%;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    width: 100vw;
+    height: 240px;
+    margin: 0px 0px 20px 0px
+}
+
+.logo {
+    font-size: 64px;
+    font-weight: bold;
+}
+
+.sublogo p{
+    font-size: 24px
+    /*margin: 0px 0px 0px 50px*/
+    border-left: 50px
+}
+
+/* Content */
+.content {
+    width: 90%;
+    height: auto;
+    margin: 40px auto;
+    padding: 24px;
+    box-sizing: border-box;
+    background-color: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    /*
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+}
+
+.controls {
+    width: 90%;
+}
+
+.rangeValue {
+    display: flex;
+    align-itens: center;
+    justify-content: space-between;
+}
+
+#three {
+    border-radius: 16px;
+}
+
+/* Footer */
+footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+}
+
+.footer {
+    flex-shrink: 0;
+    width: 100vw;
+    height: 100px;
+    padding: 24px 5%;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    background-color: #0b1120;
+    color: #94a3b8;
+    border-top: 1px solid #334155;
+}
+
+.footer p {
+  margin: 0;
+}
+
+.footer .name {
+    margin: 0px 0px 0px 5px
+)
+
+</style>
+</head>
+
+<body>
+
+<header class="header">
+    <div class="logo">Efeito Hall</div>
+    <div class="sublogo"><p>Campos cruzados: o Efeito Hall</p></div>
+</header>
+
+<main class="content">
+    <div class="controls">
+        <label for="range4" class="form-label">Example range</label>
+        <input type="range" class="form-range" min="-10" max="10" value="0" id="range4">
+        <div class="rangeValue">
+            <p>-10</p> <p>0</p> <p>10</p>
+        </div>
+    </div>
+    <div class="render"></div>
+</main>
+
+<footer class="footer">
+    <p class="copy">&copy; 2026 Simulação efeito Hall</p>
+    <p class="name">Arthur Amaral</p>
+    <p class="name">Diego Braga</p>
+    <p class="name">Fernando Maia</p>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+
+<script type="module">
+
+// ############ Imports ############
+
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.179.1/build/three.module.js';
+
+//########### Setting Schemes #############
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x000000);
+
+// PoV
+const camera =
+new THREE.PerspectiveCamera(
+    75,
+    (window.innerWidth * 0.85)/(window.innerWidth * 0.55),
+    //1,
+    0.1,
+    1000
+);
+
+camera.position.x = 0;
+camera.position.y = 0;
+camera.position.z = 5;
+
+// ############ Renderer ############
+
+const renderer =
+new THREE.WebGLRenderer({
+    antialias:true
+});
+
+// Canvas size
+renderer.setSize(
+    window.innerWidth * 0.85,
+    window.innerWidth * 0.55
+);
+
+renderer.domElement.id = "three";
+
+document.querySelector(".render").appendChild(renderer.domElement);
+
+// ############ Eixos ############
+
+const axesHelper = new THREE.AxesHelper(5);
+scene.add(axesHelper);
+
+// ############ Values ############
+
+let corrente = 0.02;
+let magneticZ = 5;
+const magneticStrength = 0.005;
+const hallStrength = 0.5;
+const charge = -1; // Eletron
+
+// ############ Conductor ############
+
+const conductor =
+    new THREE.Mesh(
+        new THREE.BoxGeometry(
+            6,    // comprimento
+            1,    // altura
+            1.5   // largura
+        ),
+        new THREE.MeshPhongMaterial({
+            color:0x808080,
+            transparent:true,
+            opacity:0.3
+    })
+);
+
+scene.add(conductor);
+
+//############ Eletrons ############
+
+const electrons = []; // Varios eletrons circulando
+for(let i=0; i<50; i++) {
+    const electron =
+    new THREE.Mesh(
+        new THREE.SphereGeometry(
+            0.05,
+            12,
+            12
+        ),
+        new THREE.MeshBasicMaterial({
+            color:0x00ffff
+        })
+    );
+
+    electron.position.set(
+        -2.5 + Math.random()*5,
+        -0.4 + Math.random()*0.8,
+        -0.4 + Math.random()*0.8
+    );
+
+    scene.add(electron);
+    electrons.push(electron);
+}
+
+//############ Vectors ############
+
+// Velocidade da particula
+const velocityVector =
+new THREE.Vector3(
+    corrente,
+    0,
+    0
+);
+
+// Intensidade do Campo Magnetico
+const magneticField =
+new THREE.Vector3(
+    0,
+    0,
+    magneticZ
+);
+
+// LorenzForce (Forca magnetica)
+function lorentzForce(
+    charge,
+    velocity,
+    magneticField
+)
+{
+    return velocity
+        .clone()
+        .cross(magneticField)
+        .multiplyScalar(charge);
+}
+
+// HallForce
+
+function hallForce(y)
+{
+    return -hallStrength * y;
+}
+
+//############## Eixos (Visuais) #################
+
+// Campo saindo do plano
+function createFieldOutOfPlane()
+{
+    const group = new THREE.Group();
+
+    const ring =
+    new THREE.Mesh(
+        new THREE.RingGeometry(
+            0.07,
+            0.08,
+            16
+        ),
+        new THREE.MeshBasicMaterial({
+            color:0xffff00,
+            side:THREE.DoubleSide
+        })
+    );
+    group.add(ring);
+
+    const center =
+    new THREE.Mesh(
+        new THREE.SphereGeometry(
+            0.015,
+            0.020,
+            16
+        ),
+        new THREE.MeshBasicMaterial({
+            color:0xffff00
+        })
+    );
+    group.add(center);
+
+    return group;
+}
+
+// Multiples of them
+for(let x=-2;x <= 2; x+=1){
+    for(let y=-1;y<=1;y+=0.5)
+    {
+        const symbol =
+        createFieldOutOfPlane();
+
+        symbol.position.set(
+            x,
+            y,
+            1.2
+        );
+
+        scene.add(symbol);
+    }
+}
+
+//  ############ Ambient ############
+
+const ambientLight =
+new THREE.AmbientLight(
+    0xffffff,
+    0.7
+);
+scene.add(ambientLight);
+
+const directionalLight =
+new THREE.DirectionalLight(
+    0xffffff,
+    1
+);
+
+directionalLight.position.set(
+    5,
+    5,
+    5
+);
+scene.add(directionalLight);
+
+// ############ Animate ############
+
+function animate()
+{
+    requestAnimationFrame(animate);
+    
+    electrons.forEach(electron =>
+    {
+        const magneticForce =
+            lorentzForce(
+            charge,
+            velocityVector,
+            magneticField
+        );
+        
+        const electricForce =
+            new THREE.Vector3(
+            0,
+            hallForce(
+               electron.position.y
+            ),
+            0
+        );
+        
+        // Eixo X
+        electron.position.add(
+            velocityVector
+        );
+
+        // Eixo Y
+        electron.position.add(
+            magneticForce
+                .clone()
+                .multiplyScalar(0.005)
+        );
+
+        electron.position.add(
+            electricForce
+                .clone()
+                .multiplyScalar(0.005)
+        );
+
+        // Manter eletron no semi-condutor
+        if(electron.position.x > 2.8)
+        {
+            electron.position.x = -2.8;
+        }
+        
+        if(electron.position.y > 0.45)
+        {
+            electron.position.y = 0.45;
+        }
+             
+    });
+
+    renderer.render(
+        scene,
+        camera
+    );
+}
+
+animate();
+
+</script>
+
+</body>
+</html>
