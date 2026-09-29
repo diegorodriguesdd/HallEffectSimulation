@@ -20,11 +20,11 @@ body, html {
 }
 
 body {
-    overflow:hidden;
+    overflow-y:auto;
     background-color: #0f172a;
     color: #e2e8f0;
     font-family: Arial, sans-serif;
-    min-height: 100%;
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
     justify-content: center; /* centraliza verticalmente */
@@ -45,7 +45,7 @@ main {
     align-items: flex-start;
     justify-content: center;
     width: 100vw;
-    height: 240px;
+    height: 150px;
     margin: 0px 0px 20px 0px
 }
 
@@ -61,7 +61,20 @@ main {
 }
 
 /* Content */
-.content {
+@media(max-width:900px)
+{
+    main
+    {
+        flex-direction:column;
+    }
+
+    .controls
+    {
+        width:100%;
+    }
+}
+
+main {
     width: 90%;
     height: auto;
     margin: 40px auto;
@@ -78,18 +91,26 @@ main {
     justify-content: center;
     */
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 16px;
+    gap: 20px;
+    
 }
 
 .controls {
     width: 90%;
+    
+}
+
+#l p {
+    font-size: 24px;
+}
+
+.rangeValue, .form-range {
+    width: 100%;
 }
 
 .rangeValue {
     display: flex;
-    align-itens: center;
     justify-content: space-between;
 }
 
@@ -99,7 +120,7 @@ main {
 
 /* Footer */
 footer {
-  position: fixed;
+  margin-top: auto;
   bottom: 0;
   left: 0;
   width: 100%;
@@ -108,7 +129,7 @@ footer {
 .footer {
     flex-shrink: 0;
     width: 100vw;
-    height: 100px;
+    height: 120px;
     padding: 24px 5%;
     display: flex;
     flex-direction: column;
@@ -138,14 +159,31 @@ footer {
 </header>
 
 <main class="content">
+    <div class="render"></div>
+    
     <div class="controls">
-        <label for="range4" class="form-label">Example range</label>
-        <input type="range" class="form-range" min="-10" max="10" value="0" id="range4">
+        <div class="rangeValue" id="l">
+            <p>Tensão Hall</p>
+            <p class="inputH">0 V</p>
+        </div>
+        <div class="rangeValue" id="l">
+            <p>Corrente elétrica</p>
+            <p class="inputA">0 A</p>
+        </div>
+        <input type="range" class="form-range" min="-10" max="10" value="0" id="iValue">
         <div class="rangeValue">
             <p>-10</p> <p>0</p> <p>10</p>
         </div>
+        
+        <div class="rangeValue" id="l">
+            <p>Campo Magnético</p>
+            <p class="inputT">0 T</p>
+        </div>
+        <input type="range" class="form-range" min="-3" max="3" value="0" id="bValue">
+        <div class="rangeValue">
+            <p>-3</p> <p>0</p> <p>3</p>
+        </div>
     </div>
-    <div class="render"></div>
 </main>
 
 <footer class="footer">
@@ -158,6 +196,11 @@ footer {
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
 
 <script type="module">
+
+/*
+####################################
+#           Animate                 
+##################################*/
 
 // ############ Imports ############
 
@@ -172,7 +215,7 @@ scene.background = new THREE.Color(0x000000);
 const camera =
 new THREE.PerspectiveCamera(
     75,
-    (window.innerWidth * 0.85)/(window.innerWidth * 0.55),
+    (window.innerWidth * 0.50)/(window.innerWidth * 0.40),
     //1,
     0.1,
     1000
@@ -181,6 +224,27 @@ new THREE.PerspectiveCamera(
 camera.position.x = 0;
 camera.position.y = 0;
 camera.position.z = 5;
+
+/*
+window.addEventListener(
+    "resize",
+    onWindowResize
+);
+
+function onWindowResize()
+{
+    camera.aspect =
+        window.innerWidth /
+        window.innerHeight;
+
+    camera.updateProjectionMatrix();
+
+    renderer.setSize(
+        window.innerWidth,
+        window.innerHeight
+    );
+}
+*/
 
 // ############ Renderer ############
 
@@ -191,8 +255,8 @@ new THREE.WebGLRenderer({
 
 // Canvas size
 renderer.setSize(
-    window.innerWidth * 0.85,
-    window.innerWidth * 0.55
+    window.innerWidth * 0.50,
+    window.innerWidth * 0.40
 );
 
 renderer.domElement.id = "three";
@@ -201,25 +265,37 @@ document.querySelector(".render").appendChild(renderer.domElement);
 
 // ############ Eixos ############
 
+/*
 const axesHelper = new THREE.AxesHelper(5);
 scene.add(axesHelper);
+*/
 
 // ############ Values ############
 
-let corrente = 0.02;
-let magneticZ = 5;
-const magneticStrength = 0.005;
+//let corrente = iControl.value;
+//let magneticZ = 5;
+//const magneticStrength = 0.005;
+let corrente;
+let campo;
+let magneticForce;
+let electricForce;
+let Vh;
 const hallStrength = 0.5;
 const charge = -1; // Eletron
 
+let boxW = 6
+let boxH = 1
+let boxP = 1
+
 // ############ Conductor ############
 
+/*
 const conductor =
     new THREE.Mesh(
         new THREE.BoxGeometry(
-            6,    // comprimento
-            1,    // altura
-            1.5   // largura
+            boxW,    // comprimento
+            boxH,    // altura
+            boxP   // largura
         ),
         new THREE.MeshPhongMaterial({
             color:0x808080,
@@ -227,22 +303,49 @@ const conductor =
             opacity:0.3
     })
 );
+scene.add(conductor);
+*/
+const boxMaterial =
+new THREE.MeshPhongMaterial({
+    color: 0x808080,
+    transparent: true,
+    opacity: 0.05
+});
+
+const conductor =
+new THREE.Mesh(
+    new THREE.BoxGeometry(6,1,1.5),
+    boxMaterial
+);
 
 scene.add(conductor);
+
+const edges =
+new THREE.EdgesGeometry(
+    conductor.geometry
+);
+
+const edgeLines =
+new THREE.LineSegments(
+    edges,
+    new THREE.LineBasicMaterial({
+        color: 0xffffff
+    })
+);
+
+conductor.add(edgeLines);
 
 //############ Eletrons ############
 
 const electrons = []; // Varios eletrons circulando
 for(let i=0; i<50; i++) {
     const electron =
-    new THREE.Mesh(
-        new THREE.SphereGeometry(
-            0.05,
-            12,
-            12
-        ),
+        new THREE.Mesh(
+        new THREE.SphereGeometry(0.05, 12, 12),
         new THREE.MeshBasicMaterial({
-            color:0x00ffff
+            color: 0x00ffff,
+            transparent: true,
+            opacity: 0.8
         })
     );
 
@@ -258,45 +361,24 @@ for(let i=0; i<50; i++) {
 
 //############ Vectors ############
 
-// Velocidade da particula
-const velocityVector =
-new THREE.Vector3(
-    corrente,
-    0,
-    0
-);
 
-// Intensidade do Campo Magnetico
-const magneticField =
-new THREE.Vector3(
-    0,
-    0,
-    magneticZ
-);
+const velocityVector = new THREE.Vector3(0, 0, 0);
+const iVector = new THREE.Vector3(0, 0, 0);
+const magneticField = new THREE.Vector3(0, 0, 0);
+const electricField = new THREE.Vector3(0, 0, 0);
 
 // LorenzForce (Forca magnetica)
-function lorentzForce(
-    charge,
-    velocity,
-    magneticField
-)
-{
-    return velocity
+function crossForce(charge, vec1, vec2){
+    return vec1
         .clone()
-        .cross(magneticField)
+        .cross(vec2)
         .multiplyScalar(charge);
-}
-
-// HallForce
-
-function hallForce(y)
-{
-    return -hallStrength * y;
 }
 
 //############## Eixos (Visuais) #################
 
 // Campo saindo do plano
+
 function createFieldOutOfPlane()
 {
     const group = new THREE.Group();
@@ -304,12 +386,12 @@ function createFieldOutOfPlane()
     const ring =
     new THREE.Mesh(
         new THREE.RingGeometry(
-            0.07,
-            0.08,
-            16
+            0.11,
+            0.14,
+            32
         ),
         new THREE.MeshBasicMaterial({
-            color:0xffff00,
+            color:0xffffff,
             side:THREE.DoubleSide
         })
     );
@@ -317,13 +399,12 @@ function createFieldOutOfPlane()
 
     const center =
     new THREE.Mesh(
-        new THREE.SphereGeometry(
-            0.015,
-            0.020,
-            16
+        new THREE.CircleGeometry(
+            0.035,
+            32
         ),
         new THREE.MeshBasicMaterial({
-            color:0xffff00
+            color:0xffffff
         })
     );
     group.add(center);
@@ -331,6 +412,81 @@ function createFieldOutOfPlane()
     return group;
 }
 
+function createFieldIntoPlane()
+{
+    const group = new THREE.Group();
+
+    const ring =
+    new THREE.Mesh(
+        new THREE.RingGeometry(
+            0.11,
+            0.14,
+            32
+        ),
+        new THREE.MeshBasicMaterial({
+            color: 0xffffff,
+            side: THREE.DoubleSide
+        })
+    );
+
+    group.add(ring);
+
+    const material =
+    new THREE.LineBasicMaterial({
+        color: 0xffffff
+    });
+
+    const diagonal1 =
+    new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(-0.11,-0.11,0),
+            new THREE.Vector3( 0.11, 0.11,0)
+        ]),
+        material
+    );
+
+    const diagonal2 =
+    new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(-0.11, 0.11,0),
+            new THREE.Vector3( 0.11,-0.11,0)
+        ]),
+        material
+    );
+
+    group.add(diagonal1);
+    group.add(diagonal2);
+
+    return group;
+}
+
+const fieldOut =
+createFieldOutOfPlane();
+
+const fieldIn =
+createFieldIntoPlane();
+
+scene.add(fieldOut);
+scene.add(fieldIn);
+
+fieldOut.visible = true;
+fieldIn.visible = false;
+
+function updateFieldSymbol()
+{
+    if(magneticField.z >= 0)
+    {
+        fieldOut.visible = true;
+        fieldIn.visible = false;
+    }
+    else
+    {
+        fieldOut.visible = false;
+        fieldIn.visible = true;
+    }
+}
+
+/*
 // Multiples of them
 for(let x=-2;x <= 2; x+=1){
     for(let y=-1;y<=1;y+=0.5)
@@ -347,7 +503,7 @@ for(let x=-2;x <= 2; x+=1){
         scene.add(symbol);
     }
 }
-
+*/
 //  ############ Ambient ############
 
 const ambientLight =
@@ -370,6 +526,81 @@ directionalLight.position.set(
 );
 scene.add(directionalLight);
 
+const iArrow =
+new THREE.ArrowHelper(
+    iVector.clone(),
+    new THREE.Vector3(0,0,0),
+    4,
+    0x8a2be2
+);
+scene.add(iArrow);
+
+const fmArrow =
+new THREE.ArrowHelper(
+    new THREE.Vector3(0,0,0),
+    new THREE.Vector3(0,0,0),
+    4,
+    0xff0000
+);
+scene.add(fmArrow);
+
+// ############# Controls ##############
+
+function updateVh (A, T){
+    Vh = Number( (A * T) / (8.5 * 1.6 * 10 ** 6 ));
+    let uVh = Number(Vh * 10 ** 6).toFixed(4);
+    if(Number.isFinite(Vh)){
+        document.querySelector(".inputH").textContent =  uVh + " uV";
+    } else {
+        document.querySelector(".inputH").textContent = "0 V";
+    }
+}
+let iControl = document.querySelector("#iValue");
+iControl.addEventListener("input", (event) => {
+    corrente = Number(event.target.value);
+    velocityVector.set(corrente * -0.01, 0, 0);
+    iVector.set(velocityVector.x, 0, 0);
+    document.querySelector(".inputA").textContent = corrente + " A";
+    updateVh(corrente, campo);
+});
+
+let bControl = document.querySelector("#bValue");
+bControl.addEventListener("input", (event) => {
+    campo = Number(event.target.value);
+    magneticField.set(0, 0, campo * 1.5);
+    document.querySelector(".inputT").textContent = campo + " T";
+    updateVh(corrente, campo);
+    updateFieldSymbol();
+});
+
+/*
+let eControl = document.querySelector("#eValue");
+eControl.addEventListener("input", (event) => {
+    const eletrico = Number(event.target.value);
+    if(eletrico == 0){
+        electricField.set(0,0,0);
+        //document.querySelector(".debug").textContent = "caso 0: " + magneticField.z + " " + electricField.z + " " + eletrico;
+    } else {
+        electricField.set(0, 0, (magneticField.z)*(-1));
+        //document.querySelector(".debug").textContent = "caso 1: " + magneticField.z + " " + electricField.z + " " + eletrico;
+    }
+    
+});
+*/
+
+function module(num){
+    if(num >= 0){
+        return {value: num, signal: 0};
+    } else {
+        return {value: -num, signal: 1};
+    }
+}
+
+
+const geometry = conductor.geometry;
+const boxL = geometry.parameters.width;
+const boxA = geometry.parameters.height;
+
 // ############ Animate ############
 
 function animate()
@@ -378,53 +609,70 @@ function animate()
     
     electrons.forEach(electron =>
     {
-        const magneticForce =
-            lorentzForce(
-            charge,
-            velocityVector,
-            magneticField
-        );
-        
-        const electricForce =
-            new THREE.Vector3(
-            0,
-            hallForce(
-               electron.position.y
-            ),
-            0
-        );
-        
-        // Eixo X
+        magneticForce = crossForce(charge, velocityVector, magneticField);
+        electricForce = crossForce(charge, velocityVector, electricField);
+       
+         // Eixo X
         electron.position.add(
             velocityVector
+        );
+        iArrow.setDirection(
+            iVector.clone().negate().normalize()
+        );
+        iArrow.setLength(
+            iVector.length() * 25
         );
 
         // Eixo Y
         electron.position.add(
             magneticForce
                 .clone()
-                .multiplyScalar(0.005)
+                .multiplyScalar(0.05)
         );
-
         electron.position.add(
             electricForce
                 .clone()
-                .multiplyScalar(0.005)
+                .multiplyScalar(0.05)
         );
-
+        
+        fmArrow.setDirection(
+            magneticForce.clone().normalize()
+        );
+        fmArrow.setLength(
+            magneticForce.length() * 5
+        );
+        
         // Manter eletron no semi-condutor
-        if(electron.position.x > 2.8)
-        {
-            electron.position.x = -2.8;
+        if(electron.position.x > (boxL/2)){
+            electron.position.x = electron.position.x * (-1);
+        } else if(electron.position.x < -(boxL/2)) {
+            electron.position.x = electron.position.x * (-1);
         }
         
-        if(electron.position.y > 0.45)
-        {
-            electron.position.y = 0.45;
+        const { value, signal } = module(electron.position.y)
+        if(value > (boxA/2)*(0.88)){
+            if(signal == 0){
+                electron.position.y = (boxA/2)*(0.88);
+            } else {
+                electron.position.y = -(boxA/2)*(0.88);
+            }
+            electricField.set(0, 0, (magneticField.z)*(-1));
+        } else {
+            electricField.set(0, 0, 0.1);
         }
+//        if(/*(electron.position.y != 0) && */(electron.position.y > (boxA/2)*(0.88))){
+//            electron.position.y = (boxA/2)*(0.88);
+//        } else if(){
+//        else /*if ((electron.position.y != 0) && (electron.position.y < -(boxA/2)*(0.88)))*/ {
+//            electron.position.y = -(boxA/2)*(0.88);
+//        } /*else {
+//            electron.position.y = 0;
+//            document.querySelector(".debug").textContent = "aaaaaaaaaa";
+//        } */
+        
              
     });
-
+    
     renderer.render(
         scene,
         camera
